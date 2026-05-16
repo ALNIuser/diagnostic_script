@@ -1,0 +1,49 @@
+sudo bash << 'DIAGEOF'
+exec > /tmp/hp_diag.txt 2>&1
+echo "=== Дата: $(date) ==="
+echo "=== СИСТЕМА ==="
+uname -a
+cat /etc/os-release
+uptime
+echo "=== КАМЕНЬ ==="
+lscpu
+echo "=== ПАМЯТЬ ==="
+free -h
+cat /proc/meminfo
+echo "=== СВАП ==="
+swapon --show
+echo "=== НАГРУЗКА ==="
+cat /proc/loadavg
+echo "=== ТОП ПО ЖОРУ ==="
+top -b -n1 | head -30
+echo "=== ЗОМБИ (если есть) ==="
+ps aux | awk '$8=="Z"'
+echo "=== ЖЕЛЕЗО ==="
+lshw -short 2>/dev/null
+lspci -nnk
+lsusb
+lsblk
+df -h
+echo "=== ДИСКИ (SMART) ==="
+for d in /dev/sd?; do
+    [ -b "$d" ] && smartctl -a "$d" 2>&1
+done
+echo "=== ТЕМПЕРАТУРЫ ==="
+sensors 2>&1
+echo "=== ГРАФИКА ==="
+lshw -c display 2>/dev/null
+echo "=== XORG (хвост) ==="
+[ -f /var/log/Xorg.0.log ] && tail -100 /var/log/Xorg.0.log
+echo "=== СДОХШИЕ ЮНИТЫ systemd ==="
+systemctl list-units --state=failed --no-legend
+echo "=== ОШИБКИ В ЖУРНАЛЕ (последние 300) ==="
+journalctl -p 3 -xb --no-pager -n 300
+echo "=== DMESG (ошибки/предупреждения) ==="
+dmesg --level=err,warn | tail -200
+echo "=== КРЭШ-РЕПОРТЫ ==="
+ls -la /var/crash 2>&1
+echo "=== ACPI (часто виновато) ==="
+dmesg | grep -i acpi | tail -50
+echo "=== ГОТОВО, ковыряй /tmp/hp_diag.txt ==="
+DIAGEOF
+echo "Вывод в /tmp/hp_diag.txt. Скопируй оттуда всё и вывали сюда."
